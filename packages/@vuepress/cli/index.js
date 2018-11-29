@@ -26,16 +26,12 @@ if (!semver.satisfies(process.version, requiredVersion)) {
 const cli = require('cac')()
 
 exports.cli = cli
-exports.bootstrap = function ({
+exports.bootstrap = async function ({
   plugins,
   theme
 } = {}) {
   const { path, logger, env } = require('@vuepress/shared-utils')
-  const { dev, build, eject } = require('@vuepress/core')
-
-  cli
-    .version(pkg.version)
-    .help()
+  const { dev, build, eject, unknownCommand } = require('@vuepress/core')
 
   cli
     .command('dev [targetDir]', 'start development server')
@@ -108,10 +104,56 @@ exports.bootstrap = function ({
     })
 
   // output help information on unknown commands
-  cli.on('command:*', () => {
-    console.error('Unknown command: %s', cli.args.join(' '))
-    console.log()
+  cli.on('command:*', async () => {
+    const { args, options } = cli
+
+    logger.debug('cli_args', args)
+    logger.debug('cli_options', options)
+    logger.setOptions({ logLevel: 1 })
+    const [commandName, sourceDir = '.'] = args
+    const subCli = await unknownCommand(commandName, sourceDir, options)
+    if (!subCli.matchedCommand) {
+      console.error('Unknown command: %s', cli.args.join(' '))
+      console.log()
+    }
   })
+
+  const prepare = require('@vuepress/core/lib/prepare')
+  const argv = process.argv.slice(2)
+
+  function isHelpFlag (v) {
+    return v === '--help' || v === '-h'
+  }
+
+  function nonExistedCommandHelp (argv) {
+    return ['dev', 'build', 'eject'].indexOf(argv[0]) === -1 && isHelpFlag(argv[1])
+  }
+
+  if (isHelpFlag(argv[0]) || nonExistedCommandHelp(argv)) {
+    let ctx
+    let [, sourceDir] = argv
+
+    if (!sourceDir || sourceDir.startsWith('-')) {
+      sourceDir = path.resolve('.', 'docs')
+    }
+
+    if (!require('fs').existsSync(sourceDir)) {
+      sourceDir = path.resolve('.')
+    }
+
+    logger.setOptions({ logLevel: 1 })
+
+    if (sourceDir) {
+      ctx = await prepare(sourceDir, { theme, plugins })
+      ctx.pluginAPI.options.registerCommand.apply(cli)
+    }
+
+    logger.setOptions({ logLevel: 3 })
+  }
+
+  cli
+    .version(pkg.version)
+    .help()
 
   function wrapCommand (fn) {
     return (...args) => {

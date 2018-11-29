@@ -76,6 +76,7 @@ module.exports = ctx => ({
     ['@vuepress/google-analytics', {
       ga: 'UA-128189152-1'
     }],
+    '@vuepress/plugin-pdf'
   ],
   clientRootMixin: path.resolve(__dirname, 'mixin.js'),
   extendMarkdown (md) {
