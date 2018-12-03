@@ -1,3 +1,8 @@
+<a name=""></a>
+# [](https://github.com/vuejs/vuepress/compare/v1.0.0-alpha.27...v) (2018-12-03)
+
+
+
 <a name="1.0.0-alpha.26"></a>
 # [1.0.0-alpha.26](https://github.com/vuejs/vuepress/compare/v1.0.0-alpha.25...v1.0.0-alpha.26) (2018-12-02)
 
